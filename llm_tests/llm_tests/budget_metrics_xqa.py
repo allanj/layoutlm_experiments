@@ -1,4 +1,4 @@
-import typer
+
 import os
 import sys
 import tempfile
@@ -19,8 +19,8 @@ from transformers import (
     LayoutLMv3FeatureExtractor,
 )
 from datasets import load_dataset, load_from_disk
-from llm_tests.budget_metrics_shared import normalized_levenshtein
-
+from llm_tests.llm_tests.budget_metrics_shared import normalized_levenshtein
+from tqdm import tqdm
 def cli(
     model_path: str,
     val_data_path: str,
@@ -122,7 +122,7 @@ def cli(
 
     total_normalized_levenshtein = 0
 
-    for idx, batch in enumerate(dataloader):
+    for idx, batch in tqdm(enumerate(dataloader), total=len(dataloader), desc="decoding"):
         # print(f"processing batch: {batch}")
         # run predict
         input_ids = batch["input_ids"].to(device)
@@ -158,10 +158,10 @@ def cli(
         pred_results = preprocess_preds(outputs, labels)
 
         # pretty print prediction info
-        print(f'expected: {pred_results.acceptable_answers}')
-        print(f' predicted: {pred_results.answer}')
-        print(f'  locs: {pred_results.answer_locs}')
-        print(f'  probs: {pred_results.answer_probs}')
+        # print(f'expected: {pred_results.acceptable_answers}')
+        # print(f' predicted: {pred_results.answer}')
+        # print(f'  locs: {pred_results.answer_locs}')
+        # print(f'  probs: {pred_results.answer_probs}')
 
         if len(pred_results.acceptable_answers) == 0:
             # no answer
@@ -191,17 +191,17 @@ def cli(
                 best_similarity = similarity
                 best_answer_match = acceptable_answer
         
-        if best_answer_match:
-            print(' matched answer:', best_answer_match)
-        else:
-            print(' no match')
+        # if best_answer_match:
+        #     print(' matched answer:', best_answer_match)
+        # else:
+        #     print(' no match')
 
         if abs(1 - best_similarity) < 0.001:
             num_exact_correct += 1
         
         total_normalized_levenshtein += best_similarity
         
-        print(f' best similarity: {best_similarity:.3f}')
+        # print(f' best similarity: {best_similarity:.3f}')
 
         num_items += 1
 
@@ -213,9 +213,8 @@ def cli(
     print(f"anls: {anls:.3f}")
 
 
-def main():
-    typer.run(cli)
 
 
 if __name__ == "__main__":
-    main()
+    cli(model_path="train_output_trial/checkpoint-4000",
+        val_data_path="docvqa_external_val_cached")

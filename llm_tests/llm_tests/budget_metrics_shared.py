@@ -1,4 +1,4 @@
-import typer
+
 import os
 import sys
 import tempfile
@@ -17,7 +17,6 @@ from transformers import (
     AutoTokenizer,
     LayoutLMv3FeatureExtractor,
 )
-from llm_tests.modeling_llm3dec import LayoutLMv3Seq2SeqModel
 from datasets import load_dataset, load_from_disk
 from types import SimpleNamespace
 

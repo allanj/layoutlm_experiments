@@ -1,4 +1,3 @@
-import typer
 import os
 from typing import Optional, Dict, Tuple
 import collections
@@ -40,7 +39,7 @@ def cli(
     # load the model
     print(f"loading model: {model_path}")
     model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    processor = AutoProcessor.from_pretrained("microsoft/layoutlmv3-base", apply_ocr=True)
+    processor = AutoProcessor.from_pretrained(model_path, apply_ocr=True)
     print(f"model loaded: {model_path}")
 
     # load the data
@@ -79,10 +78,12 @@ def cli(
         # warmup_steps=int(steps * warmup_ratio),
         warmup_ratio=warmup_ratio,
         save_steps=save_every,
+        fp16=True,
         evaluation_strategy = "epoch",
-        per_device_train_batch_size=inst_batch // n_devices,
-        per_device_eval_batch_size=inst_batch // n_devices,
-        gradient_accumulation_steps=batch // inst_batch,
+        per_device_train_batch_size=inst_batch,
+        ddp_find_unused_parameters=False,
+        per_device_eval_batch_size=inst_batch,
+        gradient_accumulation_steps=batch // (inst_batch * n_devices),
         run_name=run_name,
         report_to = "wandb" if log_wandb else None,
     )
@@ -126,9 +127,10 @@ def cli(
 
     log_eval()
 
-def main():
-    typer.run(cli)
 
 
 if __name__ == "__main__":
-    main()
+    cli(model_path='pretrained_models/layoutlmv3-base',
+    train_data_path="docvqa_external_train_cached",
+    val_data_path="docvqa_external_val_cached",
+    run_name="trial", lr=3e-5, batch=128, inst_batch=8, warmup_ratio=0.048, save_every=2000)
